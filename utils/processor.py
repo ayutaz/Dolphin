@@ -31,7 +31,7 @@ class DolphinProcessor:
         try:
             self.answer_start_token = self.tokenizer._prompt_end_token
         except AttributeError as err:
-            print('No answer_start_token found, use "" instead')
+            print('answer_start_tokenが見つかりませんでした。代わりに""を使用します')
             self.answer_start_token = ""
 
         self.prefix_answer_space_flag = dp_config.get("prefix_answer_space_flag", True)

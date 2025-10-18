@@ -50,7 +50,9 @@ class DOLPHIN:
         """
         # Prepare image
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
-        pixel_values = pixel_values.half()
+        # Use float16 on CUDA, float32 on CPU
+        if self.device == "cuda":
+            pixel_values = pixel_values.half()
             
         # Prepare prompt
         prompt = f"<s>{prompt} <Answer/>"
@@ -127,29 +129,29 @@ def process_element(image_path, model, element_type, save_dir=None):
     # Save results if save_dir is provided
     if save_dir:
         save_outputs(recognition_result, image_path, save_dir)
-        print(f"Results saved to {save_dir}")
+        print(f"結果を保存: {save_dir}")
     
     return result, recognition_result
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Element-level processing using DOLPHIN model")
-    parser.add_argument("--model_path", default="./hf_model", help="Path to Hugging Face model")
-    parser.add_argument("--input_path", type=str, required=True, help="Path to input image or directory of images")
+    parser = argparse.ArgumentParser(description="DOLPHINモデルによる要素レベル処理")
+    parser.add_argument("--model_path", default="./hf_model", help="Hugging Faceモデルへのパス")
+    parser.add_argument("--input_path", type=str, required=True, help="入力画像または画像ディレクトリへのパス")
     parser.add_argument(
         "--element_type",
         type=str,
         choices=["text", "table", "formula"],
         default="text",
-        help="Type of element to process (text, table, formula)",
+        help="処理する要素のタイプ (text, table, formula)",
     )
     parser.add_argument(
         "--save_dir",
         type=str,
         default=None,
-        help="Directory to save parsing results (default: same as input directory)",
+        help="解析結果の保存先ディレクトリ (デフォルト: 入力と同じディレクトリ)",
     )
-    parser.add_argument("--print_results", action="store_true", help="Print recognition results to console")
+    parser.add_argument("--print_results", action="store_true", help="認識結果をコンソールに出力")
     args = parser.parse_args()
     
     # Load Model
@@ -169,15 +171,15 @@ def main():
         image_files = sorted(image_files)
     else:
         if not os.path.exists(args.input_path):
-            raise FileNotFoundError(f"Input path {args.input_path} does not exist")
+            raise FileNotFoundError(f"入力パス {args.input_path} が存在しません")
         image_files = [args.input_path]
-    
+
     total_samples = len(image_files)
-    print(f"\nTotal samples to process: {total_samples}")
-    
+    print(f"\n処理するサンプル数: {total_samples}")
+
     # Process images one by one
     for image_path in image_files:
-        print(f"\nProcessing {image_path}")
+        print(f"\n処理中: {image_path}")
         try:
             result, recognition_result = process_element(
                 image_path=image_path,
@@ -187,11 +189,11 @@ def main():
             )
 
             if args.print_results:
-                print("\nRecognition result:")
+                print("\n認識結果:")
                 print(result)
                 print("-" * 40)
         except Exception as e:
-            print(f"Error processing {image_path}: {str(e)}")
+            print(f"処理エラー {image_path}: {str(e)}")
             continue
 
 

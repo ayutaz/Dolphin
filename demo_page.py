@@ -24,13 +24,13 @@ def process_document(document_path, model, save_dir, max_batch_size):
         # Convert PDF to images
         images = convert_pdf_to_images(document_path)
         if not images:
-            raise Exception(f"Failed to convert PDF {document_path} to images")
+            raise Exception(f"PDFを画像に変換できませんでした: {document_path}")
         
         all_results = []
         
         # Process each page
         for page_idx, pil_image in enumerate(images):
-            print(f"Processing page {page_idx + 1}/{len(images)}")
+            print(f"ページ {page_idx + 1}/{len(images)} を処理中")
             
             # Generate output name for this page
             base_name = os.path.splitext(os.path.basename(document_path))[0]
@@ -143,7 +143,7 @@ def process_elements(layout_results, padded_image, dims, model, max_batch_size, 
             reading_order += 1
 
         except Exception as e:
-            print(f"Error processing bbox with label {label}: {str(e)}")
+            print(f"ラベル {label} のボックス処理中にエラー: {str(e)}")
             continue
 
     # Parse text/table elements in parallel
@@ -174,20 +174,20 @@ def process_elements(layout_results, padded_image, dims, model, max_batch_size, 
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Document parsing based on DOLPHIN")
-    parser.add_argument("--config", default="./config/Dolphin.yaml", help="Path to configuration file")
-    parser.add_argument("--input_path", type=str, default="./demo", help="Path to input image/PDF or directory of files")
+    parser = argparse.ArgumentParser(description="DOLPHINによる文書解析")
+    parser.add_argument("--config", default="./config/Dolphin.yaml", help="設定ファイルへのパス")
+    parser.add_argument("--input_path", type=str, default="./demo", help="入力画像/PDFまたはファイルディレクトリへのパス")
     parser.add_argument(
         "--save_dir",
         type=str,
         default=None,
-        help="Directory to save parsing results (default: same as input directory)",
+        help="解析結果の保存先ディレクトリ (デフォルト: 入力と同じディレクトリ)",
     )
     parser.add_argument(
         "--max_batch_size",
         type=int,
         default=4,
-        help="Maximum number of document elements to parse in a single batch (default: 4)",
+        help="1バッチで解析する文書要素の最大数 (デフォルト: 4)",
     )
     args = parser.parse_args()
 
@@ -206,15 +206,15 @@ def main():
         document_files = sorted(document_files)
     else:
         if not os.path.exists(args.input_path):
-            raise FileNotFoundError(f"Input path {args.input_path} does not exist")
-        
+            raise FileNotFoundError(f"入力パス {args.input_path} が存在しません")
+
         # Check if it's a supported file type
         file_ext = os.path.splitext(args.input_path)[1].lower()
         supported_exts = ['.jpg', '.jpeg', '.png', '.pdf']
-        
+
         if file_ext not in supported_exts:
-            raise ValueError(f"Unsupported file type: {file_ext}. Supported types: {supported_exts}")
-        
+            raise ValueError(f"サポートされていないファイル形式: {file_ext}。サポート形式: {supported_exts}")
+
         document_files = [args.input_path]
 
     save_dir = args.save_dir or (
@@ -223,11 +223,11 @@ def main():
     setup_output_dirs(save_dir)
 
     total_samples = len(document_files)
-    print(f"\nTotal files to process: {total_samples}")
+    print(f"\n処理するファイル数: {total_samples}")
 
     # Process All Document Files
     for file_path in document_files:
-        print(f"\nProcessing {file_path}")
+        print(f"\n処理中: {file_path}")
         try:
             json_path, recognition_results = process_document(
                 document_path=file_path,
@@ -236,10 +236,10 @@ def main():
                 max_batch_size=args.max_batch_size,
             )
 
-            print(f"Processing completed. Results saved to {save_dir}")
+            print(f"処理完了。結果を保存: {save_dir}")
 
         except Exception as e:
-            print(f"Error processing {file_path}: {str(e)}")
+            print(f"処理エラー {file_path}: {str(e)}")
             continue
 
 

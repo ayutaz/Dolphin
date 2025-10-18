@@ -47,7 +47,7 @@ def save_figure_to_local(pil_crop, save_dir, image_name, reading_order):
         return figure_filename
 
     except Exception as e:
-        print(f"Error saving figure: {str(e)}")
+        print(f"図の保存エラー: {str(e)}")
         # Return a fallback filename
         return f"{image_name}_figure_{reading_order:03d}_error.png"
 
@@ -83,11 +83,11 @@ def convert_pdf_to_images(pdf_path, target_size=896):
             images.append(pil_image)
 
         doc.close()
-        print(f"Successfully converted {len(images)} pages from PDF")
+        print(f"PDFから{len(images)}ページを正常に変換しました")
         return images
 
     except Exception as e:
-        print(f"Error converting PDF to images: {str(e)}")
+        print(f"PDFの画像変換エラー: {str(e)}")
         return []
 
 
@@ -151,9 +151,9 @@ def save_combined_pdf_results(all_page_results, pdf_path, save_dir):
         # print(f"Combined markdown saved to: {markdown_path}")
 
     except ImportError:
-        print("MarkdownConverter not available, skipping markdown generation")
+        print("MarkdownConverterが利用できないため、Markdown生成をスキップします")
     except Exception as e:
-        print(f"Error generating markdown: {e}")
+        print(f"Markdown生成エラー: {e}")
 
     # print(f"Combined JSON results saved to: {json_path}")
     return json_path
@@ -285,7 +285,7 @@ def map_to_original_coordinates(x1, y1, x2, y2, dims: ImageDimensions) -> Tuple[
 
         return int(orig_x1), int(orig_y1), int(orig_x2), int(orig_y2)
     except Exception as e:
-        print(f"map_to_original_coordinates error: {str(e)}")
+        print(f"座標の元画像へのマッピングエラー: {str(e)}")
         # Return safe coordinates
         return 0, 0, min(100, dims.original_w), min(100, dims.original_h)
 
@@ -304,7 +304,7 @@ def map_to_relevant_coordinates(abs_coords, dims: ImageDimensions):
             round(y2 / dims.original_h, 3),
         )
     except Exception as e:
-        print(f"map_to_relevant_coordinates error: {str(e)}")
+        print(f"関連座標へのマッピングエラー: {str(e)}")
         return 0.0, 0.0, 1.0, 1.0  # Return full image coordinates
 
 
@@ -372,7 +372,7 @@ def process_coordinates(coords, padded_image, dims: ImageDimensions, previous_bo
 
         return x1, y1, x2, y2, orig_x1, orig_y1, orig_x2, orig_y2, new_previous_box
     except Exception as e:
-        print(f"process_coordinates error: {str(e)}")
+        print(f"座標処理エラー: {str(e)}")
         # Return safe values
         orig_x1, orig_y1, orig_x2, orig_y2 = 0, 0, min(100, dims.original_w), min(100, dims.original_h)
         return 0, 0, 100, 100, orig_x1, orig_y1, orig_x2, orig_y2, [0, 0, 100, 100]
@@ -408,7 +408,7 @@ def prepare_image(image) -> Tuple[np.ndarray, ImageDimensions]:
 
         return padded_image, dimensions
     except Exception as e:
-        print(f"prepare_image error: {str(e)}")
+        print(f"画像準備エラー: {str(e)}")
         # Create a minimal valid image and dimensions
         h, w = image.height, image.width
         dimensions = ImageDimensions(original_w=w, original_h=h, padded_w=w, padded_h=h)
@@ -448,7 +448,7 @@ def crop_margin(img: Image.Image) -> Image.Image:
     try:
         width, height = img.size
         if width == 0 or height == 0:
-            print("Warning: Image has zero width or height")
+            print("警告: 画像の幅または高さがゼロです")
             return img
 
         data = np.array(img.convert("L"))
@@ -476,5 +476,5 @@ def crop_margin(img: Image.Image) -> Image.Image:
             return img.crop((a, b, a + w, b + h))
         return img
     except Exception as e:
-        print(f"crop_margin error: {str(e)}")
+        print(f"余白切り取りエラー: {str(e)}")
         return img  # Return original image on error
