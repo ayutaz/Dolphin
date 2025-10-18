@@ -152,3 +152,14 @@ Desktop.ini
 
 fusion_result.json
 kernel_meta/
+
+# Claude Code
+.claude/
+
+# Downloaded models
+hf_model/
+checkpoints/
+
+# Results
+results/
+results_gpu/
