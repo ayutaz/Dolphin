@@ -10,22 +10,62 @@ Dolphinは文書画像解析用のマルチモーダルVLMモデル（0.3B）で
 
 このプロジェクトはPythonで書かれており、uvを使用して依存関係を管理します。
 
+### ステップ1: 仮想環境の作成
+
+**重要:** Python 3.11を使用してください（torch 2.1.0はPython 3.12に対応していません）
+
 ```bash
-# uvで仮想環境を作成して依存関係をインストール
-uv venv
-uv pip install -r requirements.txt
+# Python 3.11で仮想環境を作成
+uv venv --python 3.11
 ```
 
-### 必要な依存関係
-- PyTorch 2.1.0 + torchvision 0.16.0
-- transformers 4.47.0
-- timm 0.5.4
-- opencv-python, pillow, pymupdf
-- omegaconf 2.3.0
+### ステップ2: 依存関係のインストール
 
-### モデルのダウンロード
+requirements.txtには互換性の問題があるため、以下のコマンドで個別にインストールします：
 
-**オプションA: オリジナル形式（config-based）**
+```bash
+# 互換性のあるバージョンでインストール
+uv pip install numpy==1.24.4 omegaconf==2.3.0 opencv-python==4.5.5.64 opencv-python-headless==4.5.5.64 pillow==9.3.0 timm==0.5.4 torch==2.1.0 torchvision==0.16.0 transformers==4.47.0 accelerate==1.6.0 pymupdf==1.26
+```
+
+**注意点:**
+- `opencv-python==4.11.0.86`（requirements.txt記載）は`numpy==1.24.4`と互換性がないため、`4.5.5.64`を使用
+- `torch==2.1.0`はPython 3.11以下が必要
+
+### ステップ3: GPU版PyTorchのインストール（オプションだが推奨）
+
+NVIDIA GPU（RTX 4070 Ti SUPERなど）を使用する場合、CUDA版をインストール：
+
+```bash
+# CPU版をアンインストール
+uv pip uninstall torch torchvision
+
+# CUDA 12.1版をインストール
+uv pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu121
+```
+
+**GPU動作確認:**
+```bash
+uv run python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}'); print(f'Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"CPU\"}')"
+```
+
+### ステップ4: モデルのダウンロード
+
+**推奨: Hugging Face形式**
+```bash
+# Hugging Face CLIでダウンロード（huggingface_hubは既にインストール済み）
+uv run hf download ByteDance/Dolphin --local-dir ./hf_model
+```
+
+これで約263MBのモデルファイル（model.safetensors他）が`./hf_model`ディレクトリにダウンロードされます。
+
+**代替: Git LFSでダウンロード**
+```bash
+git lfs install
+git clone https://huggingface.co/ByteDance/Dolphin ./hf_model
+```
+
+**オプション: オリジナル形式（config-based）**
 ```bash
 # checkpoints/ディレクトリに以下を配置:
 # - dolphin_model.bin
@@ -33,15 +73,17 @@ uv pip install -r requirements.txt
 # Baidu Yun または Google Drive からダウンロード
 ```
 
-**オプションB: Hugging Face形式**
-```bash
-# Hugging Face Hubからモデルをダウンロード
-git lfs install
-git clone https://huggingface.co/ByteDance/Dolphin ./hf_model
-# または
-uv pip install huggingface_hub
-huggingface-cli download ByteDance/Dolphin --local-dir ./hf_model
-```
+### インストールの依存関係
+- Python: 3.11（必須）
+- PyTorch: 2.1.0 + torchvision 0.16.0
+- transformers: 4.47.0
+- timm: 0.5.4
+- opencv-python: 4.5.5.64
+- numpy: 1.24.4
+- omegaconf: 2.3.0
+- pillow: 9.3.0
+- pymupdf: 1.26
+- accelerate: 1.6.0
 
 ## よく使うコマンド
 
@@ -83,6 +125,31 @@ uv run python demo_element_hf.py --model_path ./hf_model --input_path ./demo/ele
 ```bash
 uv run python demo_element_hf.py --model_path ./hf_model --input_path ./demo/element_imgs/para_1.jpg --element_type text
 ```
+
+### 実行結果の確認
+
+処理結果は`save_dir`で指定したディレクトリに保存されます（デフォルト: 入力と同じディレクトリ）
+
+**ファイル構造:**
+```
+results/
+├── recognition_json/
+│   └── [ファイル名].json      # 構造化データ（bbox, label, text, reading_order）
+└── markdown/
+    ├── [ファイル名].md         # Markdown形式の結果
+    └── figures/                # 抽出された図
+        └── [ファイル名]_figure_*.png
+```
+
+**例: PDFを処理した場合**
+```bash
+uv run python demo_page_hf.py --model_path ./hf_model --input_path ./demo/page_imgs/page_6.pdf --save_dir ./results
+```
+
+結果:
+- `results/recognition_json/page_6.json` - 全9ページの解析結果（JSON）
+- `results/markdown/page_6.md` - 全9ページの内容（Markdown）
+- `results/markdown/figures/page_6_page_00X_figure_*.png` - 抽出された図
 
 ## アーキテクチャ概要
 
@@ -136,3 +203,68 @@ uv run python demo_element_hf.py --model_path ./hf_model --input_path ./demo/ele
 ## コードフォーマット
 
 pyproject.tomlにBlack設定あり（line-length: 120）。
+
+## トラブルシューティング
+
+### 依存関係のエラー
+
+**問題: `torch==2.1.0`がインストールできない**
+```
+× No solution found when resolving dependencies:
+  ╰─▶ Because torch==2.1.0 has no wheels with a matching Python ABI tag
+```
+
+**解決策:** Python 3.11を使用してください
+```bash
+uv venv --python 3.11
+```
+
+**問題: `opencv-python`と`numpy`のバージョン競合**
+```
+× opencv-python==4.11.0.86 depends on numpy>=1.26.0 and you require numpy==1.24.4
+```
+
+**解決策:** opencv-python 4.5.5.64を使用
+```bash
+uv pip install opencv-python==4.5.5.64 opencv-python-headless==4.5.5.64
+```
+
+### 実行時のエラー
+
+**問題: `Input type (struct c10::Half) and bias type (float) should be the same`**
+
+CPUで実行時にfloat16/float32の型不一致が発生。
+
+**解決策:** このエラーは修正済みです。最新のコードでは自動的にCPU/GPUに応じて適切な型を使用します。
+
+**問題: GPU（CUDA）が認識されない**
+
+**確認:**
+```bash
+uv run python -c "import torch; print(torch.cuda.is_available())"
+```
+
+**解決策:** CUDA版PyTorchをインストール
+```bash
+uv pip uninstall torch torchvision
+uv pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu121
+```
+
+### パフォーマンス
+
+**GPU VRAMが不足する場合**
+
+`max_batch_size`を小さくしてください：
+```bash
+uv run python demo_page_hf.py --model_path ./hf_model --input_path input.pdf --max_batch_size 4
+```
+
+デフォルト値:
+- オリジナル版: 4
+- HF版: 16
+
+**処理が遅い場合**
+
+1. GPU版PyTorchを使用しているか確認
+2. CUDA（float16）で実行されているか確認
+3. バッチサイズを増やす（VRAMに余裕がある場合）
