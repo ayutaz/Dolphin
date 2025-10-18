@@ -63,7 +63,10 @@ class DOLPHIN:
         
         # Prepare image
         batch_inputs = self.processor(images, return_tensors="pt", padding=True)
-        batch_pixel_values = batch_inputs.pixel_values.half().to(self.device)
+        batch_pixel_values = batch_inputs.pixel_values.to(self.device)
+        # Use float16 on CUDA, float32 on CPU
+        if self.device == "cuda":
+            batch_pixel_values = batch_pixel_values.half()
         
         # Prepare prompt
         prompts = [f"<s>{p} <Answer/>" for p in prompts]
